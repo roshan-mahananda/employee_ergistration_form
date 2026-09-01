@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background-color: #f0f2f5;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 240px;
+            background-color: #1e293b;
+            color: #fff;
+            padding: 20px;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 30px;
+        }
+
+        .table-container {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th,
+        td {
+            padding: 14px 20px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        th {
+            background-color: #f8fafc;
+            color: #475569;
+            font-size: 13px;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-pending {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .badge-approved {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .badge-rejected {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .btn {
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .btn-approve {
+            background-color: #22c55e;
+            color: white;
+            margin-right: 5px;
+        }
+
+        .btn-reject {
+            background-color: #ef4444;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+
+    <aside class="sidebar">
+        <h3>Admin Portal</h3>
+    </aside>
+
+    <main class="main-content">
+        <h2>Employee Access Control</h2>
+        <br>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Employee</th>
+                        <th>Email</th>
+                        <th>Department</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="user-table-body">
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCH9Xa6_e-UghuLRTbDufRLxqTIqM2Q-SY",
+        authDomain: "company-registration-por-b180f.firebaseapp.com",
+        projectId: "company-registration-por-b180f",
+        storageBucket: "company-registration-por-b180f.firebasestorage.app",
+        messagingSenderId: "818104939504",
+        appId: "1:818104939504:web:ec302dc7ba77f339d5e335"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const q = query(collection(db, "users"), where("role", "==", "employee"));
+
+    onSnapshot(q, (snapshot) => {
+        const tbody = document.getElementById('user-table-body');
+        tbody.innerHTML = "";
+
+        snapshot.forEach((docSnap) => {
+            const user = docSnap.data();
+            const row = document.createElement('tr');
+
+            row.innerHTML = `
+                <td>${user.firstName} ${user.lastName}</td>
+                <td>${user.email}</td>
+                <td>${user.department}</td>
+                <td><span class="badge badge-${user.status}">${user.status.toUpperCase()}</span></td>
+                <td>
+                    ${user.status === 'pending' ? `
+                        <button class="btn btn-approve" data-id="${user.uid}">Approve</button>
+                        <button class="btn btn-reject" data-id="${user.uid}">Reject</button>
+                    ` : 'No Action Needed'}
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+
+        document.querySelectorAll('.btn-approve').forEach(btn => {
+            btn.addEventListener('click', (e) => updateStatus(e.target.dataset.id, 'approved'));
+        });
+        document.querySelectorAll('.btn-reject').forEach(btn => {
+            btn.addEventListener('click', (e) => updateStatus(e.target.dataset.id, 'rejected'));
+        });
+    });
+
+    async function updateStatus(uid, newStatus) {
+        const userRef = doc(db, "users", uid);
+        await updateDoc(userRef, { status: newStatus });
+    }
+</script>
+</body>
+
+</html>
